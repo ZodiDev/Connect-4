@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .current-player {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .player1 { background: #ff6b6b; }
+        .player2 { background: #4ecdc4; }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 4px 15px rgba(0, 0, 0, 0.3);
+            touch-action: manipulation;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .cell.filled {
+            cursor: default;
+            border-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.filled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .piece {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .falling-piece {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        .winning-piece {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+            50% { box-shadow: 0 4px 20px rgba(255, 255, 255, 0.8); }
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .winner-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .column-hint {
+            position: absolute;
+            top: -50px;
+            width: calc((100% - 40px) / 7 - 8px);
+            height: calc((100% - 40px) / 7 - 8px);
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .column-hint.visible {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .board {
+                gap: 6px;
+                padding: 15px;
+            }
+
+            .game-info {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .current-player {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .board {
+                gap: 4px;
+                padding: 10px;
+            }
+
+            .game-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Connect 4</h1>
+        
+        <div class="game-info">
+            <div class="current-player">
+                <span>Current Player:</span>
+                <div class="player-indicator player1" id="playerIndicator"></div>
+                <span id="playerText">Player 1</span>
+            </div>
+            <button class="reset-btn" onclick="resetGame()">New Game</button>
+        </div>
+
+        <div id="gameOver" class="game-over" style="display: none;">
+            <div class="winner-text">
+                <div class="player-indicator" id="winnerIndicator"></div>
+                <span id="winnerText"></span>
+            </div>
+            <p>Click "New Game" to play again!</p>
+        </div>
+
+        <div class="board" id="board"></div>
+    </div>
+
+    <script>
+        class Connect4 {
+            constructor() {
+                this.rows = 6;
+                this.cols = 7;
+                this.currentPlayer = 1;
+                this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+                this.gameOver = false;
+                this.winningCells = [];
+                this.isAnimating = false;
+                this.touchUsed = false;
+                
+                this.createBoard();
+                this.setupColumnHints();
+            }
+
+            createBoard() {
+                const boardElement = document.getElementById('board');
+                boardElement.innerHTML = '';
+                
+                for (let row = 0; row < this.rows; row++) {
+                    for (let col = 0; col < this.cols; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Handle both mouse and touch events properly
+                        cell.addEventListener('click', (e) => {
+                            if (e.isTrusted && !this.touchUsed) {
+                                e.stopPropagation();
+                                this.dropPiece(col);
+                            }
+                        });
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            setupColumnHints() {
+                const boardElement = document.getElementById('board');
+                boardElement.style.position = 'relative';
+                
+                // Remove existing hints
+                const existingHints = boardElement.querySelectorAll('.column-hint');
+                existingHints.forEach(hint => hint.remove());
+                
+                // Create new hints
+                for (let col = 0; col < this.cols; col++) {
+                    const hint = document.createElement('div');
+                    hint.className = `column-hint player${this.currentPlayer}`;
+                    hint.style.left = `calc(20px + ${col} * (calc((100% - 40px) / 7) + 8px))`;
+                    hint.dataset.col = col;
+                    boardElement.appendChild(hint);
+                }
+
+                // Add hover effects
+                boardElement.addEventListener('mouseenter', () => {
+                    if (!this.gameOver && !this.isAnimating) {
+                        this.showColumnHints();
+                    }
+                });
+
+                boardElement.addEventListener('mouseleave', () => {
+                    this.hideColumnHints();
+                });
+
+                boardElement.addEventListener('mousemove', (e) => {
+                    if (!this.gameOver && !this.isAnimating) {
+                        this.updateColumnHints(e);
+                    }
+                });
+            }
+
+            showColumnHints() {
+                const hints = document.querySelectorAll('.column-hint');
+                hints.forEach((hint, index) => {
+                    // Only show hint if column has available space
+                    const columnHasSpace = this.getLowestEmptyRow(index) !== -1;
+                    if (columnHasSpace) {
+                        hint.className = `column-hint player${this.currentPlayer} visible`;
+                    } else {
+                        hint.className = `column-hint player${this.currentPlayer}`;
+                    }
+                });
+            }
+
+            hideColumnHints() {
+                const hints = document.querySelectorAll('.column-hint');
+                hints.forEach(hint => {
+                    hint.className = `column-hint player${this.currentPlayer}`;
+                });
+            }
+
+            updateColumnHints(e) {
+                const boardElement = document.getElementById('board');
+                const rect = boardElement.getBoundingClientRect();
+                const x = e.clientX - rect.left - 20; // Account for padding
+                const boardWidth = rect.width - 40; // Account for padding on both sides
+                const colWidth = boardWidth / this.cols;
+                const col = Math.floor(x / colWidth);
+                
+                const hints = document.querySelectorAll('.column-hint');
+                hints.forEach((hint, index) => {
+                    // Only show hint if column has space and mouse is over it
+                    const columnHasSpace = this.getLowestEmptyRow(index) !== -1;
+                    
+                    if (index === col && col >= 0 && col < this.cols && x >= 0 && x <= boardWidth && columnHasSpace) {
+                        hint.className = `column-hint player${this.currentPlayer} visible`;
+                        hint.style.transform = 'scale(1.2)';
+                    } else {
+                        hint.className = `column-hint player${this.currentPlayer}`;
+                        hint.style.transform = 'scale(1)';
+                    }
+                });
+            }
+
+            dropPiece(col) {
+                if (this.gameOver || this.isAnimating) return;
+
+                const row = this.getLowestEmptyRow(col);
+                if (row === -1) return; // Column is full
+
+                this.isAnimating = true;
+                this.hideColumnHints(); // Hide hints during animation
+                this.board[row][col] = this.currentPlayer;
+                this.animatePiece(row, col);
+
+                // Calculate animation duration: 80ms per row + 100ms buffer
+                const animationDuration = (row + 1) * 80 + 100;
+                
+                setTimeout(() => {
+                    this.isAnimating = false;
+                    
+                    if (this.checkWin(row, col)) {
+                        this.endGame(this.currentPlayer);
+                    } else if (this.isBoardFull()) {
+                        this.endGame(0); // Tie
+                    } else {
+                        this.switchPlayer();
+                    }
+                }, animationDuration);
+            }
+
+            getLowestEmptyRow(col) {
+                for (let row = this.rows - 1; row >= 0; row--) {
+                    if (this.board[row][col] === 0) return row;
+                }
+                return -1;
+            }
+
+            animatePiece(finalRow, col) {
+                // Create falling piece that moves through actual grid cells
+                this.createFallingPiece(finalRow, col);
+            }
+
+            createFallingPiece(finalRow, col) {
+                let currentRow = 0;
+                
+                const animateStep = () => {
+                    // Remove piece from previous row
+                    if (currentRow > 0) {
+                        const prevCell = document.querySelector(`[data-row="${currentRow - 1}"][data-col="${col}"]`);
+                        const prevPiece = prevCell.querySelector('.falling-piece');
+                        if (prevPiece) prevPiece.remove();
+                    }
+                    
+                    // Add piece to current row
+                    const currentCell = document.querySelector(`[data-row="${currentRow}"][data-col="${col}"]`);
+                    const fallingPiece = document.createElement('div');
+                    fallingPiece.className = `piece falling-piece player${this.currentPlayer}`;
+                    currentCell.appendChild(fallingPiece);
+                    
+                    currentRow++;
+                    
+                    // Continue falling until we reach the final row
+                    if (currentRow <= finalRow) {
+                        setTimeout(animateStep, 80);
+                    } else {
+                        // Animation complete - replace with permanent piece
+                        setTimeout(() => {
+                            const fallPiece = currentCell.querySelector('.falling-piece');
+                            if (fallPiece) {
+                                fallPiece.remove();
+                                const finalPiece = document.createElement('div');
+                                finalPiece.className = `piece player${this.currentPlayer}`;
+                                currentCell.appendChild(finalPiece);
+                                currentCell.classList.add('filled');
+                            }
+                        }, 50);
+                    }
+                };
+                
+                // Start the animation
+                animateStep();
+            }
+
+            checkWin(row, col) {
+                const directions = [
+                    [0, 1],  // horizontal
+                    [1, 0],  // vertical
+                    [1, 1],  // diagonal /
+                    [1, -1]  // diagonal \
+                ];
+
+                for (const [dr, dc] of directions) {
+                    const cells = this.getConnectedCells(row, col, dr, dc);
+                    if (cells.length >= 4) {
+                        this.winningCells = cells;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            getConnectedCells(row, col, dr, dc) {
+                const player = this.board[row][col];
+                const cells = [[row, col]];
+
+                // Check positive direction
+                let r = row + dr, c = col + dc;
+                while (r >= 0 && r < this.rows && c >= 0 && c < this.cols && 
+                       this.board[r][c] === player) {
+                    cells.push([r, c]);
+                    r += dr;
+                    c += dc;
+                }
+
+                // Check negative direction
+                r = row - dr;
+                c = col - dc;
+                while (r >= 0 && r < this.rows && c >= 0 && c < this.cols && 
+                       this.board[r][c] === player) {
+                    cells.unshift([r, c]);
+                    r -= dr;
+                    c -= dc;
+                }
+
+                return cells;
+            }
+
+            isBoardFull() {
+                return this.board[0].every(cell => cell !== 0);
+            }
+
+            switchPlayer() {
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                this.updateUI();
+            }
+
+            updateUI() {
+                const indicator = document.getElementById('playerIndicator');
+                const text = document.getElementById('playerText');
+                
+                indicator.className = `player-indicator player${this.currentPlayer}`;
+                text.textContent = `Player ${this.currentPlayer}`;
+
+                // Update column hints to show current player color
+                const hints = document.querySelectorAll('.column-hint');
+                hints.forEach(hint => {
+                    hint.className = hint.className.replace(/player[12]/, `player${this.currentPlayer}`);
+                });
+            }
+
+            endGame(winner) {
+                this.gameOver = true;
+                const gameOverDiv = document.getElementById('gameOver');
+                const winnerIndicator = document.getElementById('winnerIndicator');
+                const winnerText = document.getElementById('winnerText');
+
+                if (winner === 0) {
+                    winnerText.textContent = "It's a Tie!";
+                    winnerIndicator.style.display = 'none';
+                } else {
+                    winnerText.textContent = `Player ${winner} Wins!`;
+                    winnerIndicator.className = `player-indicator player${winner}`;
+                    winnerIndicator.style.display = 'block';
+                    
+                    // Highlight winning pieces
+                    this.winningCells.forEach(([row, col]) => {
+                        const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                        const piece = cell.querySelector('.piece');
+                        if (piece) piece.classList.add('winning-piece');
+                    });
+                }
+
+                gameOverDiv.style.display = 'block';
+            }
+
+            reset() {
+                this.currentPlayer = 1;
+                this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+                this.gameOver = false;
+                this.winningCells = [];
+                this.isAnimating = false;
+                this.touchUsed = false;
+                
+                document.getElementById('gameOver').style.display = 'none';
+                this.createBoard();
+                this.setupColumnHints();
+                this.updateUI();
+            }
+        }
+
+        let game = new Connect4();
+
+        function resetGame() {
+            game.reset();
+        }
+
+        // Better touch handling for mobile
+        document.getElementById('board').addEventListener('touchend', (e) => {
+            if (game.gameOver || game.isAnimating) return;
+            
+            e.preventDefault();
+            game.touchUsed = true;
+            
+            const touch = e.changedTouches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (element && element.classList.contains('cell')) {
+                const col = parseInt(element.dataset.col);
+                game.dropPiece(col);
+            }
+            
+            // Reset touch flag after a short delay
+            setTimeout(() => {
+                game.touchUsed = false;
+            }, 100);
+        });
+    </script>
+</body>
+</html>
